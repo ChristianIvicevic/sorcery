@@ -1,0 +1,27 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.sort_derive]
+workspace = false
+command = "python3"
+args = ["./tools/sort_derive.py"]
+
+[tasks.clippy]
+workspace = false
+toolchain = "nightly"
+command = "cargo"
+args = ["clippy", "--fix", "-Z", "unstable-options", "--allow-dirty"]
+
+[tasks.format]
+workspace = false
+toolchain = "nightly"
+command = "cargo"
+args = ["fmt"]
+
+[tasks.lint]
+workspace = false
+dependencies = [
+    "sort_derive",
+    "clippy",
+    "format"
+]

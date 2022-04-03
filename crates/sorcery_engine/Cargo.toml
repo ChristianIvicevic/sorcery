@@ -1,0 +1,15 @@
+[package]
+name = "sorcery_engine"
+publish = false
+authors = ["Christian Ivicevic <mail@christian-ivicevic.com>"]
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hecs = "0.7.6"
+indexmap = "1.8.1"
+log = "0.4.16"
+rand = "0.8.5"
+
+[dev-dependencies]
+pretty_assertions = "1.2.1"
