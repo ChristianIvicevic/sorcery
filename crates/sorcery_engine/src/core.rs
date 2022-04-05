@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+use indexmap::IndexSet;
+
 /// Opaque type to reference a player within a game.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) struct PlayerId(pub(crate) u32);
@@ -13,7 +15,7 @@ pub(crate) struct Player {
 }
 
 /// 105.1. There are five colors in the Magic game: white, blue, black, red, and green.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Color {
     White,
     Blue,
@@ -76,7 +78,8 @@ pub(crate) struct ManaPool {
 ///        symbols {2/W}, {2/U}, {2/B}, {2/R}, and {2/G}; the Phyrexian mana symbols {W/P}, {U/P},
 ///        {B/P}, {R/P}, and {G/P}; the hybrid Phyrexian symbols {W/U/P}, {W/B/P}, {U/B/P}, {U/R/P},
 ///        {B/R/P}, {B/G/P}, {R/G/P}, {R/W/P}, {G/W/P}, and {G/U/P}; and the snow mana symbol {S}.
-pub(crate) enum ManaCost {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum ManaSymbol {
     /// 107.4a There are five primary colored mana symbols: {W} is white, {U} blue, {B} black, {R}
     ///        red, and {G} green. These symbols are used to represent colored mana, and also to
     ///        represent colored mana in costs. Colored mana in costs can be paid only with the
@@ -119,6 +122,126 @@ pub(crate) enum ManaCost {
     //        the amount of generic mana you pay don’t affect {S} costs. The {S} symbol can also be
     //        used to refer to mana of any type produced by a snow source spent to pay a cost. Snow
     //        is neither a color nor a type of mana.
+}
+
+/// 202.1. A card’s mana cost is indicated by mana symbols near the top of the card. (See rule
+///        107.4.) On most cards, these symbols are printed in the upper right corner. Some cards
+///        from the Future Sight set have alternate frames in which the mana symbols appear to the
+///        left of the illustration.
+pub(crate) struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
+
+/// 200.1. The parts of a card are name, mana cost, illustration, color indicator, type line,
+///        expansion symbol, text box, power and toughness, loyalty, hand modifier, life modifier,
+///        illustration credit, legal text, and collector number. Some cards may have more than one
+///        of any or all of these parts.
+///
+/// 200.2. Some parts of a card are also characteristics of the object that has them. See rule
+///        109.3.
+pub(crate) struct Card {
+    /// 201.1. The name of a card is printed on its upper left corner.
+    pub(crate) name: String,
+    /// 202.1. A card’s mana cost is indicated by mana symbols near the top of the card. (See rule
+    ///        107.4.) On most cards, these symbols are printed in the upper right corner. Some
+    ///        cards from the Future Sight set have alternate frames in which the mana symbols
+    ///        appear to the left of the illustration.
+    pub(crate) mana_cost: Option<ManaCost>,
+    /// 204.1. The color indicator is printed to the left of the type line directly below the
+    ///        illustration. It consists of a circular symbol filled in with one or more colors. A
+    ///        color indicator is usually found on nonland cards without a mana cost.
+    pub(crate) color_indicator: Option<BTreeSet<Color>>,
+    /// 205.1. The type line is printed directly below the illustration. It contains the card’s card
+    ///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
+    pub(crate) type_line: TypeLine,
+    /// 206.1. The expansion symbol indicates which Magic set a card is from. It’s a small icon
+    ///        normally printed below the right edge of the illustration. It has no effect on game
+    ///        play.
+    pub(crate) expansion_symbol: ExpansionSymbol,
+    /// 207.1. The text box is printed on the lower half of the card. It usually contains rules text
+    ///        defining the card’s abilities.
+    pub(crate) text: String,
+    /// 208.1. A creature card has two numbers separated by a slash printed in its lower right
+    ///        corner. The first number is its power (the amount of damage it deals in combat); the
+    ///        second is its toughness (the amount of damage needed to destroy it). For example, 2/3
+    ///        means the object has power 2 and toughness 3. Power and toughness can be modified or
+    ///        set to particular values by effects.
+    pub(crate) pt: Option<PtCharacteristic>,
+    /// 209.1. Each planeswalker card has a loyalty number printed in its lower right corner. This
+    ///        indicates its loyalty while it’s not on the battlefield, and it also indicates that
+    ///        the planeswalker enters the battlefield with that many loyalty counters on it.
+    pub(crate) loyalty: Option<u64>,
+    /// 212.1. Each card features text printed below the text box that has no effect on game play.
+    ///        Not all card sets were printed with all of the information listed below on each card.
+    ///
+    /// 212.1a Most card sets feature collector numbers. This information is printed in the form
+    ///        [card number]/[total cards in the set] or simply [card number]. Some cards, such as
+    ///        unique cards in Planeswalker Decks, have card numbers that exceed the listed total
+    ///        number of cards.
+    pub(crate) collector_number: u64,
+}
+
+impl Card {
+    /// 202.2. An object is the color or colors of the mana symbols in its mana cost, regardless of
+    ///        the color of its frame.
+    pub(crate) fn color(&self) -> Option<BTreeSet<Color>> {
+        match self.color_indicator {
+            Some(_) => self.color_indicator.clone(),
+            None => {
+                self.mana_cost
+                    .as_ref()
+                    .map(|it| {
+                        it.0.iter().fold(BTreeSet::new(), |mut colors, symbol| {
+                            // TODO: Extend this to a match clause once hybrid mana symbols and other
+                            //  have been implemented.
+                            if let ManaSymbol::Colored(color) = symbol {
+                                colors.insert(*color);
+                            }
+                            colors
+                        })
+                    })
+                    .filter(|it| !it.is_empty())
+            }
+        }
+    }
+}
+
+/// 205.1. The type line is printed directly below the illustration. It contains the card’s card
+///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
+pub(crate) struct TypeLine {
+    /// 205.2a The card types are artifact, conspiracy, creature, dungeon, enchantment, instant,
+    ///        land, phenomenon, plane, planeswalker, scheme, sorcery, tribal, and vanguard. See
+    ///        section 3, “Card Types.”
+    pub(crate) card_type: IndexSet<CardType>,
+    /// 205.3a A card can have one or more subtypes printed on its type line.
+    pub(crate) subtype: IndexSet<Subtype>,
+    /// 205.4a An object can have one or more supertypes. A card’s supertypes are printed directly
+    ///        before its card types. The supertypes are basic, legendary, ongoing, snow, and world.
+    pub(crate) supertype: IndexSet<Supertype>,
+}
+
+/// 206.1. The expansion symbol indicates which Magic set a card is from. It’s a small icon normally
+///        printed below the right edge of the illustration. It has no effect on game play.
+pub(crate) struct ExpansionSymbol {
+    // TODO: Figure out whether to use a String or enum for this.
+    pub(crate) set: String,
+    pub(crate) rarity: Rarity,
+}
+
+/// 206.2. The color of the expansion symbol indicates the rarity of the card within its set. A
+///        red-orange symbol indicates the card is mythic rare. A gold symbol indicates the card is
+///        rare. A silver symbol indicates the card is uncommon. A black or white symbol indicates
+///        the card is common or is a basic land. A purple symbol signifies a special rarity; to
+///        date, only the Time Spiral® “timeshifted” cards, which were rarer than that set’s rare
+///        cards, have had purple expansion symbols. (Prior to the Exodus TM set, all expansion
+///        symbols were black, regardless of rarity. Also, prior to the Sixth Edition core set, with
+///        the exception of the Simplified Chinese Fifth Edition core set, Magic core sets didn’t
+///        have expansion symbols at all.)
+pub(crate) enum Rarity {
+    MythicRare,
+    Rare,
+    Uncommon,
+    Common,
+    BasicLand,
+    Timeshifted,
 }
 
 /// 300.1. The card types are artifact, conspiracy, creature, dungeon, enchantment, instant, land,
@@ -681,8 +804,8 @@ pub(crate) enum Supertype {
 ///        object has power 2 and toughness 3. Power and toughness can be modified or set to
 ///        particular values by effects.
 pub(crate) struct PtCharacteristic {
-    power: PtValue,
-    toughness: PtValue,
+    pub(crate) power: PtValue,
+    pub(crate) toughness: PtValue,
 }
 
 pub(crate) enum PtValue {
@@ -744,5 +867,94 @@ mod tests {
         assert_eq!(iter.next(), Some(&Color::Red));
         assert_eq!(iter.next(), Some(&Color::Green));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn lands_are_colorless() {
+        let island = Card {
+            collector_number: 251,
+            color_indicator: None,
+            expansion_symbol: ExpansionSymbol {
+                rarity: Rarity::BasicLand,
+                set: "THB".into(),
+            },
+            loyalty: None,
+            mana_cost: None,
+            name: "Island".into(),
+            pt: None,
+            text: "".into(),
+            type_line: TypeLine {
+                card_type: [CardType::Land].into(),
+                subtype: [Subtype::Land(LandType::Basic(BasicLandType::Island))].into(),
+                supertype: [Supertype::Basic].into(),
+            },
+        };
+
+        assert_eq!(island.color(), None);
+    }
+
+    #[test]
+    fn generic_mana_is_colorless() {
+        let soul_guide_lantern = Card {
+            collector_number: 237,
+            color_indicator: None,
+            expansion_symbol: ExpansionSymbol {
+                rarity: Rarity::Uncommon,
+                set: "THB".into(),
+            },
+            loyalty: None,
+            mana_cost: Some(ManaCost([ManaSymbol::Generic(1)].into())),
+            name: "Soul-Guide Lantern".into(),
+            pt: None,
+            text: "".into(),
+            type_line: TypeLine {
+                card_type: [CardType::Artifact].into(),
+                subtype: [].into(),
+                supertype: [].into(),
+            },
+        };
+
+        assert_eq!(soul_guide_lantern.color(), None);
+    }
+
+    #[test]
+    fn mixed_mana_costs_have_the_correct_color() {
+        let polukranos_unchained = Card {
+            collector_number: 224,
+            color_indicator: None,
+            expansion_symbol: ExpansionSymbol {
+                rarity: Rarity::MythicRare,
+                set: "THB".into(),
+            },
+            loyalty: None,
+            mana_cost: Some(ManaCost(
+                [
+                    ManaSymbol::Colored(Color::Green),
+                    ManaSymbol::Colored(Color::Black),
+                    ManaSymbol::Generic(2),
+                ]
+                .into(),
+            )),
+            name: "Polukranos, Unchained".into(),
+            pt: Some(PtCharacteristic {
+                power: PtValue::Fixed(0),
+                toughness: PtValue::Fixed(0),
+            }),
+            text: "".into(),
+            type_line: TypeLine {
+                card_type: [CardType::Creature].into(),
+                subtype: [
+                    Subtype::Creature(CreatureType::Zombie),
+                    Subtype::Creature(CreatureType::Hydra),
+                ]
+                .into(),
+                supertype: [Supertype::Legendary].into(),
+            },
+        };
+
+        assert_eq!(
+            polukranos_unchained.color(),
+            Some([Color::Black, Color::Green].into())
+        );
     }
 }

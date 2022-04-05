@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+
+use hecs::{Entity, World};
+
 use crate::core::{Player, PlayerId};
 
 /// 100.1. These Magic rules apply to any Magic game with two or more players, including two-player
 ///        games and multiplayer games.
 pub struct Game {
-    world: hecs::World,
+    world: World,
     players: Vec<Player>,
+    libraries: HashMap<PlayerId, Library>,
 }
 
 impl Game {
@@ -20,8 +25,9 @@ impl Game {
             .collect();
 
         Self {
-            world: hecs::World::new(),
+            world: World::new(),
             players,
+            libraries: HashMap::new(),
         }
     }
 
@@ -56,16 +62,21 @@ impl Game {
     /// only available to conveniently setup the game world from within tests and will be most
     /// likely be removed once the core gameplay loop is implemented.
     #[cfg(test)]
-    pub(crate) fn world_mut(&mut self) -> &mut hecs::World {
+    pub(crate) fn world_mut(&mut self) -> &mut World {
         &mut self.world
     }
+}
+
+/// 401.1. When a game begins, each player’s deck becomes their library.
+pub(crate) struct Library {
+    cards: Vec<Entity>,
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::{
-        components::{Name, Object, ObjectBundle, ObjectType, Owner},
+        components::{Name, Object, ObjectBundle, ObjectTypeLine, Owner},
         core::{BasicLandType, CardType, Color, LandType, Subtype, Supertype, Zone},
     };
 
@@ -80,7 +91,7 @@ mod test {
             color: Color::Green,
             name: Name("Forest".into()),
             object: Object,
-            object_type: ObjectType {
+            object_type_line: ObjectTypeLine {
                 card_type: [CardType::Land].into(),
                 subtype: [Subtype::Land(LandType::Basic(BasicLandType::Forest))].into(),
                 supertype: [Supertype::Basic].into(),

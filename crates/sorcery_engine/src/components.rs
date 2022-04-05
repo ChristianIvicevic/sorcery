@@ -24,10 +24,17 @@ pub(crate) struct Owner(pub(crate) PlayerId);
 ///        108.4.
 pub(crate) struct Controller(pub(crate) PlayerId);
 
-/// Consolidated structure of all types associated with a specific Object.
-pub(crate) struct ObjectType {
+/// 205.1. The type line is printed directly below the illustration. It contains the card’s card
+///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
+pub(crate) struct ObjectTypeLine {
+    /// 205.2a The card types are artifact, conspiracy, creature, dungeon, enchantment, instant,
+    ///        land, phenomenon, plane, planeswalker, scheme, sorcery, tribal, and vanguard. See
+    ///        section 3, “Card Types.”
     pub(crate) card_type: IndexSet<CardType>,
+    /// 205.3a A card can have one or more subtypes printed on its type line.
     pub(crate) subtype: IndexSet<Subtype>,
+    /// 205.4a An object can have one or more supertypes. A card’s supertypes are printed directly
+    ///        before its card types. The supertypes are basic, legendary, ongoing, snow, and world.
     pub(crate) supertype: IndexSet<Supertype>,
 }
 
@@ -43,6 +50,6 @@ pub(crate) struct ObjectBundle {
     pub(crate) name: Name,
     pub(crate) color: Color,
     pub(crate) owner: Owner,
-    pub(crate) object_type: ObjectType,
+    pub(crate) object_type_line: ObjectTypeLine,
     pub(crate) zone: Zone,
 }
