@@ -1,4 +1,4 @@
-use crate::{Player, PlayerId};
+use crate::core::{Player, PlayerId};
 
 /// 100.1. These Magic rules apply to any Magic game with two or more players, including two-player
 ///        games and multiplayer games.
@@ -66,7 +66,7 @@ mod test {
     use super::*;
     use crate::{
         components::{Name, Object, ObjectBundle, ObjectType, Owner},
-        BasicLandType, CardType, Color, LandType, Subtype, Supertype, Zone,
+        core::{BasicLandType, CardType, Color, LandType, Subtype, Supertype, Zone},
     };
 
     #[test]

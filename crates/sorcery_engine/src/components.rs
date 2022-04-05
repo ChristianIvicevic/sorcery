@@ -1,7 +1,7 @@
 use hecs::Bundle;
 use indexmap::IndexSet;
 
-use crate::{CardType, Color, PlayerId, Subtype, Supertype, Zone};
+use crate::core::{CardType, Color, PlayerId, Subtype, Supertype, Zone};
 
 /// 109.1. An object is an ability on the stack, a card, a copy of a card, a token, a spell, a
 ///        permanent, or an emblem.
