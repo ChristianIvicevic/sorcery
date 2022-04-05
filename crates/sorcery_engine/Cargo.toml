@@ -6,7 +6,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-hecs = "0.7.6"
+hecs = { version = "0.7.6", features = ["macros"] }
 indexmap = "1.8.1"
 log = "0.4.16"
 rand = "0.8.5"

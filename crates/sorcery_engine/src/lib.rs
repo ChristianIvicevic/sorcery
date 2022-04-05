@@ -1,12 +1,32 @@
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    dead_code
+)]
+
+mod components;
+mod game;
+
 use std::collections::BTreeSet;
 
-use indexmap::IndexSet;
+/// Opaque type to reference a player within a game.
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub(crate) struct PlayerId(u32);
 
-struct PlayerId(u32);
+/// 102.1. A player is one of the people in the game. The active player is the player whose turn it
+///        is. The other players are nonactive players.
+pub(crate) struct Player {
+    pub(crate) id: PlayerId,
+    pub(crate) name: String,
+    pub(crate) life: i64,
+}
 
 /// 105.1. There are five colors in the Magic game: white, blue, black, red, and green.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-enum Color {
+pub(crate) enum Color {
     White,
     Blue,
     Black,
@@ -18,7 +38,7 @@ enum Color {
 ///        is the color or colors of the mana symbols in its mana cost, regardless of the color of
 ///        its frame. An object’s color or colors may also be defined by a color indicator or a
 ///        characteristic-defining ability. See rule 202.2.
-enum ColorKind {
+pub(crate) enum ColorKind {
     /// 105.2a A monocolored object is exactly one of the five colors.
     Monocolored(Color),
     /// 105.2b A multicolored object is two or more of the five colors.
@@ -30,7 +50,7 @@ enum ColorKind {
 /// 105.5. If an effect refers to a color pair, it means exactly two of the five colors. There are
 ///        ten color pairs: white and blue, white and black, blue and black, blue and red, black and
 ///        red, black and green, red and green, red and white, green and white, and green and blue.
-enum ColorPair {
+pub(crate) enum ColorPair {
     WhiteBlue,
     WhiteBlack,
     BlueBlack,
@@ -45,7 +65,7 @@ enum ColorPair {
 
 /// 106.1. Mana is the primary resource in the game. Players spend mana to pay costs, usually when
 ///        casting spells and activating abilities.
-enum Mana {
+pub(crate) enum Mana {
     /// 106.1a There are five colors of mana: white, blue, black, red, and green.
     Monocolored(Color),
     /// 106.1b There are six types of mana: white, blue, black, red, green, and colorless.
@@ -58,7 +78,7 @@ enum Mana {
 ///        and the player is said to lose this mana. Cards with abilities that produce mana or refer
 ///        to unspent mana have received errata in the Oracle(TM) card reference to no longer
 ///        explicitly refer to the mana pool.
-struct ManaPool {
+pub(crate) struct ManaPool {
     mana: Vec<Mana>,
 }
 
@@ -68,7 +88,7 @@ struct ManaPool {
 ///        symbols {2/W}, {2/U}, {2/B}, {2/R}, and {2/G}; the Phyrexian mana symbols {W/P}, {U/P},
 ///        {B/P}, {R/P}, and {G/P}; the hybrid Phyrexian symbols {W/U/P}, {W/B/P}, {U/B/P}, {U/R/P},
 ///        {B/R/P}, {B/G/P}, {R/G/P}, {R/W/P}, {G/W/P}, and {G/U/P}; and the snow mana symbol {S}.
-enum ManaCost {
+pub(crate) enum ManaCost {
     /// 107.4a There are five primary colored mana symbols: {W} is white, {U} blue, {B} black, {R}
     ///        red, and {G} green. These symbols are used to represent colored mana, and also to
     ///        represent colored mana in costs. Colored mana in costs can be paid only with the
@@ -113,38 +133,14 @@ enum ManaCost {
     //        is neither a color nor a type of mana.
 }
 
-/// 109.1. An object is an ability on the stack, a card, a copy of a card, a token, a spell, a
-///        permanent, or an emblem.
-///
-/// 109.3. An object’s characteristics are name, mana cost, color, color indicator, card type,
-///        subtype, supertype, rules text, abilities, power, toughness, loyalty, hand modifier, and
-///        life modifier. Objects can have some or all of these characteristics. Any other
-///        information about an object isn’t a characteristic. For example, characteristics don’t
-///        include whether a permanent is tapped, a spell’s target, an object’s owner or controller,
-///        what an Aura enchants, and so on.
-struct Object {
-    name: String,
-    mana_cost: Option<ManaCost>,
-    color: Color,
-    owner: PlayerId,
-    /// 109.4. Only objects on the stack or on the battlefield have a controller. Objects that are
-    ///        neither on the stack nor on the battlefield aren’t controlled by any player. See rule
-    ///        108.4.
-    controller: Option<PlayerId>,
-    card_type: IndexSet<CardType>,
-    subtype: IndexSet<Subtype>,
-    supertype: IndexSet<Supertype>,
-    pt: Option<PtCharacteristic>,
-    zone: Zone,
-}
-
 /// 300.1. The card types are artifact, conspiracy, creature, dungeon, enchantment, instant, land,
 ///        phenomenon, plane, planeswalker, scheme, sorcery, tribal, and vanguard. See section 3,
 ///        “Card Types.”
 /// 300.2. Some objects have more than one card type (for example, an artifact creature). Such
 ///        objects combine the aspects of each of those card types, and are subject to spells and
 ///        abilities that affect either or all of those card types.
-enum CardType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum CardType {
     Artifact,
     Conspiracy,
     Creature,
@@ -178,7 +174,8 @@ enum CardType {
 ///
 /// Example: Dryad Arbor’s type line says “Land Creature — Forest Dryad.” Forest is a land type,
 ///          and Dryad is a creature type.
-enum Subtype {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum Subtype {
     Artifact(ArtifactType),
     Creature(CreatureType),
     Enchantment(EnchantmentType),
@@ -191,7 +188,8 @@ enum Subtype {
 /// 301.3. Artifact subtypes are always a single word and are listed after a long dash: “Artifact —
 ///        Equipment.” Artifact subtypes are also called artifact types. Artifacts may have multiple
 ///        subtypes. See rule 205.3g for the complete list of artifact types.
-enum ArtifactType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum ArtifactType {
     Blood,
     Clue,
     Contraption,
@@ -210,7 +208,8 @@ enum ArtifactType {
 ///
 /// Example: “Creature — Goblin Wizard” means the card is a creature with the subtypes Goblin and
 ///          Wizard.
-enum CreatureType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum CreatureType {
     Advisor,
     Aetherborn,
     Ally,
@@ -478,7 +477,8 @@ enum CreatureType {
 ///        “Enchantment — Shrine.” Each word after the dash is a separate subtype. Enchantment
 ///        subtypes are also called enchantment types. Enchantments may have multiple subtypes.
 ///        See rule 205.3h for the complete list of enchantment types.
-enum EnchantmentType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum EnchantmentType {
     Aura,
     Cartouche,
     Class,
@@ -494,7 +494,8 @@ enum EnchantmentType {
 ///        complete list of land types.
 ///
 /// Example: “Basic Land — Mountain” means the card is a land with the subtype Mountain.
-enum LandType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum LandType {
     Basic(BasicLandType),
     Desert,
     Gate,
@@ -512,7 +513,8 @@ enum LandType {
 ///        even if the text box doesn’t actually contain that text or the object has no text box.
 ///        For Plains, [mana symbol] is {W}; for Islands, {U}; for Swamps, {B}; for Mountains, {R};
 ///        and for Forests, {G}. See rule 107.4a. See also rule 605, “Mana Abilities.”
-enum BasicLandType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum BasicLandType {
     Forest,
     Island,
     Mountain,
@@ -524,7 +526,8 @@ enum BasicLandType {
 ///        “Planeswalker — Jace.” Each word after the dash is a separate subtype. Planeswalker
 ///        subtypes are also called planeswalker types. Planeswalkers may have multiple subtypes.
 ///        See rule 205.3j for the complete list of planeswalker types.
-enum PlaneswalkerType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum PlaneswalkerType {
     Ajani,
     Aminatou,
     Angrath,
@@ -605,7 +608,8 @@ enum PlaneswalkerType {
 ///        Arcane.” Each word after the dash is a separate subtype. The set of sorcery subtypes is
 ///        the same as the set of instant subtypes; these subtypes are called spell types. Sorceries
 ///        may have multiple subtypes. See rule 205.3k for the complete list of spell types.
-enum SpellType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum SpellType {
     Adventure,
     Arcane,
     Lesson,
@@ -616,7 +620,8 @@ enum SpellType {
 ///        Realm.” All words after the dash are, collectively, a single subtype. Planar subtypes are
 ///        called planar types. A plane can have only one subtype. See rule 205.3n for the complete
 ///        list of planar types.
-enum PlanarType {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum PlanarType {
     Alara,
     Arkhos,
     Azgol,
@@ -673,7 +678,8 @@ enum PlanarType {
 ///
 /// Example: An ability reads, “All lands are 1/1 creatures that are still lands.” If any of the
 ///          affected lands were legendary, they are still legendary.
-enum Supertype {
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) enum Supertype {
     Basic,
     Legendary,
     Ongoing,
@@ -686,12 +692,12 @@ enum Supertype {
 ///        its toughness (the amount of damage needed to destroy it). For example, 2/3 means the
 ///        object has power 2 and toughness 3. Power and toughness can be modified or set to
 ///        particular values by effects.
-struct PtCharacteristic {
+pub(crate) struct PtCharacteristic {
     power: PtValue,
     toughness: PtValue,
 }
 
-enum PtValue {
+pub(crate) enum PtValue {
     Fixed(i64),
     /// 208.2. Rather than a fixed number, some creature cards have power and/or toughness that
     ///        includes a star (*).
@@ -716,7 +722,7 @@ enum PtValue {
 ///        library, hand, battlefield, graveyard, stack, exile, and command. Some older cards also
 ///        use the ante zone. Each player has their own library, hand, and graveyard. The other
 ///        zones are shared by all players.
-enum Zone {
+pub(crate) enum Zone {
     Library(PlayerId),
     Hand(PlayerId),
     Battlefield,

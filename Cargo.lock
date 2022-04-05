@@ -116,7 +116,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d4e8eb4d5dd2ea100ffbb4eb6814f4294a7362fcafbc5c1c4c015b41d16f424"
 dependencies = [
  "hashbrown 0.12.0",
- "spin",
+ "hecs-macros",
+ "lazy_static",
+ "spin 0.9.2",
+]
+
+[[package]]
+name = "hecs-macros"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aff344a9defb0a5af1de8a7cee4f992bfbdf54c9608b10e30fefc85a1e7f2854"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -142,6 +155,15 @@ checksum = "0f647032dfaa1f8b6dc29bd3edb7bbef4861b8b8007ebb118d6db284fd59f6ee"
 dependencies = [
  "autocfg",
  "hashbrown 0.11.2",
+]
+
+[[package]]
+name = "lazy_static"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+dependencies = [
+ "spin 0.5.2",
 ]
 
 [[package]]
@@ -282,6 +304,12 @@ dependencies = [
  "log",
  "sorcery_engine",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
 
 [[package]]
 name = "spin"
