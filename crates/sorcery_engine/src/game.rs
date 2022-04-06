@@ -1,8 +1,22 @@
 use std::collections::HashMap;
 
 use hecs::{Entity, World};
+use once_cell::sync::Lazy;
 
-use crate::core::{Player, PlayerId};
+use crate::core::{Card, Player, PlayerId};
+
+/// A statically loaded database of all cards that can be used as templates to spawn new instances.
+static CARD_DATABASE: Lazy<Vec<Card>> = Lazy::new(|| {
+    let database = include_str!("./cards.json");
+    serde_json::from_str(database).unwrap()
+});
+
+/// Returns a reference to the first card with the specified name. In case multiple cards share the
+/// same name, i.e. lands or reprints in different sets, there is no guarantee the same card will be
+/// selected on subsequent calls.
+pub(crate) fn find_card_by_name(name: &str) -> Option<&'static Card> {
+    CARD_DATABASE.iter().find(|it| it.name.0 == name)
+}
 
 /// 100.1. These Magic rules apply to any Magic game with two or more players, including two-player
 ///        games and multiplayer games.
@@ -73,11 +87,13 @@ pub(crate) struct Library {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use crate::{
-        components::{Name, Object, ObjectBundle, ObjectTypeLine, Owner},
-        core::{BasicLandType, CardType, Color, LandType, Subtype, Supertype, Zone},
+        components::{Object, ObjectBundle, Owner},
+        core::{
+            BasicLandType, CardType, Color, LandType, Name, Subtype, Supertype, TypeLine, Zone,
+        },
     };
 
     #[test]
@@ -91,7 +107,7 @@ mod test {
             color: Color::Green,
             name: Name("Forest".into()),
             object: Object,
-            object_type_line: ObjectTypeLine {
+            type_line: TypeLine {
                 card_type: [CardType::Land].into(),
                 subtype: [Subtype::Land(LandType::Basic(BasicLandType::Forest))].into(),
                 supertype: [Supertype::Basic].into(),

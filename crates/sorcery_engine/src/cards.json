@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Plains",
+    "mana_cost": null,
+    "color_indicator": null,
+    "type_line": { "card_type": ["Land"], "subtype": [{ "Land": { "Basic": "Plains" } }], "supertype": ["Basic"] },
+    "expansion_symbol": { "set": "THB", "rarity": "BasicLand" },
+    "text": "",
+    "pt": null,
+    "loyalty": null,
+    "collector_number": 250
+  },
+  {
+    "name": "Forest",
+    "mana_cost": null,
+    "color_indicator": null,
+    "type_line": { "card_type": ["Land"], "subtype": [{ "Land": { "Basic": "Forest" } }], "supertype": ["Basic"] },
+    "expansion_symbol": { "set":"THB", "rarity": "BasicLand" },
+    "text": "",
+    "pt": null,
+    "loyalty": null,
+    "collector_number": 254
+  },
+  {
+    "name": "Soulmender",
+    "mana_cost": [{ "Colored": "White" }],
+    "color_indicator": null,
+    "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Human" }, { "Creature": "Cleric" }], "supertype": [] },
+    "expansion_symbol": { "set": "M20", "rarity": "Common" },
+    "text": "",
+    "pt": { "power": { "Fixed": 1 }, "toughness": { "Fixed": 1 } },
+    "loyalty": null,
+    "collector_number": 37
+  },
+  {
+    "name": "Llanowar Elves",
+    "mana_cost": [{ "Colored": "Green" }],
+    "color_indicator": null,
+    "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Elf" }, { "Creature":"Druid" }], "supertype":[] },
+    "expansion_symbol": { "set": "M19", "rarity": "Common" },
+    "text": "",
+    "pt": { "power": { "Fixed": 1 }, "toughness": { "Fixed": 1 } },
+    "loyalty": null,
+    "collector_number": 314
+  },
+  {
+    "name": "Soul-Guide Lantern",
+    "mana_cost": [{ "Generic":1 }],
+    "color_indicator": null,
+    "type_line": { "card_type": ["Artifact"], "subtype": [], "supertype": [] },
+    "expansion_symbol": { "set":"THB", "rarity": "Uncommon" },
+    "text": "",
+    "pt": null,
+    "loyalty": null,
+    "collector_number": 237
+  },
+  {
+    "name": "Polukranos, Unchained",
+    "mana_cost": [{ "Generic": 2 }, { "Colored": "Black" }, { "Colored": "Green" }],
+    "color_indicator": null,
+    "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Zombie" }, { "Creature": "Hydra" }], "supertype": ["Legendary"] },
+    "expansion_symbol": { "set": "THB", "rarity": "MythicRare" },
+    "text": "",
+    "pt": { "power": { "Fixed": 0 }, "toughness": { "Fixed": 0 } },
+    "loyalty": null,
+    "collector_number": 224
+  }
+]

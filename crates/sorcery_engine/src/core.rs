@@ -1,10 +1,16 @@
 use std::collections::BTreeSet;
 
 use indexmap::IndexSet;
+use serde::{Deserialize, Serialize};
 
 /// Opaque type to reference a player within a game.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) struct PlayerId(pub(crate) u32);
+
+/// 201.2. A card’s name is always considered to be the English version of its name, regardless of
+///        printed language.
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Name(pub(crate) String);
 
 /// 102.1. A player is one of the people in the game. The active player is the player whose turn it
 ///        is. The other players are nonactive players.
@@ -15,7 +21,7 @@ pub(crate) struct Player {
 }
 
 /// 105.1. There are five colors in the Magic game: white, blue, black, red, and green.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub(crate) enum Color {
     White,
     Blue,
@@ -78,7 +84,7 @@ pub(crate) struct ManaPool {
 ///        symbols {2/W}, {2/U}, {2/B}, {2/R}, and {2/G}; the Phyrexian mana symbols {W/P}, {U/P},
 ///        {B/P}, {R/P}, and {G/P}; the hybrid Phyrexian symbols {W/U/P}, {W/B/P}, {U/B/P}, {U/R/P},
 ///        {B/R/P}, {B/G/P}, {R/G/P}, {R/W/P}, {G/W/P}, and {G/U/P}; and the snow mana symbol {S}.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum ManaSymbol {
     /// 107.4a There are five primary colored mana symbols: {W} is white, {U} blue, {B} black, {R}
     ///        red, and {G} green. These symbols are used to represent colored mana, and also to
@@ -128,6 +134,7 @@ pub(crate) enum ManaSymbol {
 ///        107.4.) On most cards, these symbols are printed in the upper right corner. Some cards
 ///        from the Future Sight set have alternate frames in which the mana symbols appear to the
 ///        left of the illustration.
+#[derive(Serialize, Deserialize)]
 pub(crate) struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
 
 /// 200.1. The parts of a card are name, mana cost, illustration, color indicator, type line,
@@ -137,9 +144,10 @@ pub(crate) struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
 ///
 /// 200.2. Some parts of a card are also characteristics of the object that has them. See rule
 ///        109.3.
+#[derive(Serialize, Deserialize)]
 pub(crate) struct Card {
     /// 201.1. The name of a card is printed on its upper left corner.
-    pub(crate) name: String,
+    pub(crate) name: Name,
     /// 202.1. A card’s mana cost is indicated by mana symbols near the top of the card. (See rule
     ///        107.4.) On most cards, these symbols are printed in the upper right corner. Some
     ///        cards from the Future Sight set have alternate frames in which the mana symbols
@@ -190,8 +198,8 @@ impl Card {
                     .as_ref()
                     .map(|it| {
                         it.0.iter().fold(BTreeSet::new(), |mut colors, symbol| {
-                            // TODO: Extend this to a match clause once hybrid mana symbols and other
-                            //  have been implemented.
+                            // TODO: Extend this to a match clause once hybrid mana symbols and
+                            //  other have been implemented.
                             if let ManaSymbol::Colored(color) = symbol {
                                 colors.insert(*color);
                             }
@@ -206,6 +214,7 @@ impl Card {
 
 /// 205.1. The type line is printed directly below the illustration. It contains the card’s card
 ///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
+#[derive(Serialize, Deserialize)]
 pub(crate) struct TypeLine {
     /// 205.2a The card types are artifact, conspiracy, creature, dungeon, enchantment, instant,
     ///        land, phenomenon, plane, planeswalker, scheme, sorcery, tribal, and vanguard. See
@@ -220,6 +229,7 @@ pub(crate) struct TypeLine {
 
 /// 206.1. The expansion symbol indicates which Magic set a card is from. It’s a small icon normally
 ///        printed below the right edge of the illustration. It has no effect on game play.
+#[derive(Serialize, Deserialize)]
 pub(crate) struct ExpansionSymbol {
     // TODO: Figure out whether to use a String or enum for this.
     pub(crate) set: String,
@@ -235,6 +245,7 @@ pub(crate) struct ExpansionSymbol {
 ///        symbols were black, regardless of rarity. Also, prior to the Sixth Edition core set, with
 ///        the exception of the Simplified Chinese Fifth Edition core set, Magic core sets didn’t
 ///        have expansion symbols at all.)
+#[derive(Serialize, Deserialize)]
 pub(crate) enum Rarity {
     MythicRare,
     Rare,
@@ -250,7 +261,7 @@ pub(crate) enum Rarity {
 /// 300.2. Some objects have more than one card type (for example, an artifact creature). Such
 ///        objects combine the aspects of each of those card types, and are subject to spells and
 ///        abilities that affect either or all of those card types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum CardType {
     Artifact,
     Conspiracy,
@@ -285,7 +296,7 @@ pub(crate) enum CardType {
 ///
 /// Example: Dryad Arbor’s type line says “Land Creature — Forest Dryad.” Forest is a land type,
 ///          and Dryad is a creature type.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum Subtype {
     Artifact(ArtifactType),
     Creature(CreatureType),
@@ -299,7 +310,7 @@ pub(crate) enum Subtype {
 /// 301.3. Artifact subtypes are always a single word and are listed after a long dash: “Artifact —
 ///        Equipment.” Artifact subtypes are also called artifact types. Artifacts may have multiple
 ///        subtypes. See rule 205.3g for the complete list of artifact types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum ArtifactType {
     Blood,
     Clue,
@@ -319,7 +330,7 @@ pub(crate) enum ArtifactType {
 ///
 /// Example: “Creature — Goblin Wizard” means the card is a creature with the subtypes Goblin and
 ///          Wizard.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum CreatureType {
     Advisor,
     Aetherborn,
@@ -588,7 +599,7 @@ pub(crate) enum CreatureType {
 ///        “Enchantment — Shrine.” Each word after the dash is a separate subtype. Enchantment
 ///        subtypes are also called enchantment types. Enchantments may have multiple subtypes.
 ///        See rule 205.3h for the complete list of enchantment types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum EnchantmentType {
     Aura,
     Cartouche,
@@ -605,7 +616,7 @@ pub(crate) enum EnchantmentType {
 ///        complete list of land types.
 ///
 /// Example: “Basic Land — Mountain” means the card is a land with the subtype Mountain.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum LandType {
     Basic(BasicLandType),
     Desert,
@@ -624,7 +635,7 @@ pub(crate) enum LandType {
 ///        even if the text box doesn’t actually contain that text or the object has no text box.
 ///        For Plains, [mana symbol] is {W}; for Islands, {U}; for Swamps, {B}; for Mountains, {R};
 ///        and for Forests, {G}. See rule 107.4a. See also rule 605, “Mana Abilities.”
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum BasicLandType {
     Forest,
     Island,
@@ -637,7 +648,7 @@ pub(crate) enum BasicLandType {
 ///        “Planeswalker — Jace.” Each word after the dash is a separate subtype. Planeswalker
 ///        subtypes are also called planeswalker types. Planeswalkers may have multiple subtypes.
 ///        See rule 205.3j for the complete list of planeswalker types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum PlaneswalkerType {
     Ajani,
     Aminatou,
@@ -719,7 +730,7 @@ pub(crate) enum PlaneswalkerType {
 ///        Arcane.” Each word after the dash is a separate subtype. The set of sorcery subtypes is
 ///        the same as the set of instant subtypes; these subtypes are called spell types. Sorceries
 ///        may have multiple subtypes. See rule 205.3k for the complete list of spell types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum SpellType {
     Adventure,
     Arcane,
@@ -731,7 +742,7 @@ pub(crate) enum SpellType {
 ///        Realm.” All words after the dash are, collectively, a single subtype. Planar subtypes are
 ///        called planar types. A plane can have only one subtype. See rule 205.3n for the complete
 ///        list of planar types.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum PlanarType {
     Alara,
     Arkhos,
@@ -789,7 +800,7 @@ pub(crate) enum PlanarType {
 ///
 /// Example: An ability reads, “All lands are 1/1 creatures that are still lands.” If any of the
 ///          affected lands were legendary, they are still legendary.
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub(crate) enum Supertype {
     Basic,
     Legendary,
@@ -803,11 +814,13 @@ pub(crate) enum Supertype {
 ///        its toughness (the amount of damage needed to destroy it). For example, 2/3 means the
 ///        object has power 2 and toughness 3. Power and toughness can be modified or set to
 ///        particular values by effects.
+#[derive(Serialize, Deserialize)]
 pub(crate) struct PtCharacteristic {
     pub(crate) power: PtValue,
     pub(crate) toughness: PtValue,
 }
 
+#[derive(Serialize, Deserialize)]
 pub(crate) enum PtValue {
     Fixed(i64),
     /// 208.2. Rather than a fixed number, some creature cards have power and/or toughness that
@@ -850,6 +863,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
+    use crate::game::find_card_by_name;
 
     #[test]
     fn color_order_is_stable() {
@@ -871,89 +885,30 @@ mod tests {
 
     #[test]
     fn lands_are_colorless() {
-        let island = Card {
-            collector_number: 251,
-            color_indicator: None,
-            expansion_symbol: ExpansionSymbol {
-                rarity: Rarity::BasicLand,
-                set: "THB".into(),
-            },
-            loyalty: None,
-            mana_cost: None,
-            name: "Island".into(),
-            pt: None,
-            text: "".into(),
-            type_line: TypeLine {
-                card_type: [CardType::Land].into(),
-                subtype: [Subtype::Land(LandType::Basic(BasicLandType::Island))].into(),
-                supertype: [Supertype::Basic].into(),
-            },
-        };
-
-        assert_eq!(island.color(), None);
+        // TODO: Consider introducing a CardBuilder specifically for tests.
+        // https://scryfall.com/card/thb/250/plains
+        let plains = find_card_by_name("Plains");
+        assert!(plains.is_some());
+        assert_eq!(plains.unwrap().color(), None);
     }
 
     #[test]
     fn generic_mana_is_colorless() {
-        let soul_guide_lantern = Card {
-            collector_number: 237,
-            color_indicator: None,
-            expansion_symbol: ExpansionSymbol {
-                rarity: Rarity::Uncommon,
-                set: "THB".into(),
-            },
-            loyalty: None,
-            mana_cost: Some(ManaCost([ManaSymbol::Generic(1)].into())),
-            name: "Soul-Guide Lantern".into(),
-            pt: None,
-            text: "".into(),
-            type_line: TypeLine {
-                card_type: [CardType::Artifact].into(),
-                subtype: [].into(),
-                supertype: [].into(),
-            },
-        };
-
-        assert_eq!(soul_guide_lantern.color(), None);
+        // TODO: Consider introducing a CardBuilder specifically for tests.
+        // https://scryfall.com/card/thb/237/soul-guide-lantern
+        let soul_guide_lantern = find_card_by_name("Soul-Guide Lantern");
+        assert!(soul_guide_lantern.is_some());
+        assert_eq!(soul_guide_lantern.unwrap().color(), None);
     }
 
     #[test]
     fn mixed_mana_costs_have_the_correct_color() {
-        let polukranos_unchained = Card {
-            collector_number: 224,
-            color_indicator: None,
-            expansion_symbol: ExpansionSymbol {
-                rarity: Rarity::MythicRare,
-                set: "THB".into(),
-            },
-            loyalty: None,
-            mana_cost: Some(ManaCost(
-                [
-                    ManaSymbol::Colored(Color::Green),
-                    ManaSymbol::Colored(Color::Black),
-                    ManaSymbol::Generic(2),
-                ]
-                .into(),
-            )),
-            name: "Polukranos, Unchained".into(),
-            pt: Some(PtCharacteristic {
-                power: PtValue::Fixed(0),
-                toughness: PtValue::Fixed(0),
-            }),
-            text: "".into(),
-            type_line: TypeLine {
-                card_type: [CardType::Creature].into(),
-                subtype: [
-                    Subtype::Creature(CreatureType::Zombie),
-                    Subtype::Creature(CreatureType::Hydra),
-                ]
-                .into(),
-                supertype: [Supertype::Legendary].into(),
-            },
-        };
-
+        // TODO: Consider introducing a CardBuilder specifically for tests.
+        // https://scryfall.com/card/thb/224/polukranos-unchained
+        let polukranos_unchained = find_card_by_name("Polukranos, Unchained");
+        assert!(polukranos_unchained.is_some());
         assert_eq!(
-            polukranos_unchained.color(),
+            polukranos_unchained.unwrap().color(),
             Some([Color::Black, Color::Green].into())
         );
     }
