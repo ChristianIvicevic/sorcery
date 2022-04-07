@@ -943,13 +943,14 @@ mod tests {
             Color::Red,
             Color::White,
         ]);
-        let mut iter = colors.iter();
-        assert_eq!(iter.next(), Some(&Color::White));
-        assert_eq!(iter.next(), Some(&Color::Blue));
-        assert_eq!(iter.next(), Some(&Color::Black));
-        assert_eq!(iter.next(), Some(&Color::Red));
-        assert_eq!(iter.next(), Some(&Color::Green));
-        assert_eq!(iter.next(), None);
+        assert!(colors.iter().eq([
+            Color::White,
+            Color::Blue,
+            Color::Black,
+            Color::Red,
+            Color::Green
+        ]
+        .iter()));
     }
 
     #[test]
