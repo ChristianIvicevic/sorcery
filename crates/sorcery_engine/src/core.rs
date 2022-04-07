@@ -1,5 +1,7 @@
 use std::collections::BTreeSet;
 
+#[cfg(test)]
+use derive_builder::Builder;
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 
@@ -145,6 +147,11 @@ pub(crate) struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
 /// 200.2. Some parts of a card are also characteristics of the object that has them. See rule
 ///        109.3.
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(
+    test,
+    derive(Builder),
+    builder(pattern = "owned", setter(strip_option), default)
+)]
 pub(crate) struct Card {
     /// 201.1. The name of a card is printed on its upper left corner.
     pub(crate) name: Name,
@@ -185,6 +192,32 @@ pub(crate) struct Card {
     ///        unique cards in Planeswalker Decks, have card numbers that exceed the listed total
     ///        number of cards.
     pub(crate) collector_number: u64,
+}
+
+#[cfg(test)]
+impl Default for Card {
+    /// Default implementation that yields an empty card used for testing in combination with the
+    /// [`CardBuilder`].
+    fn default() -> Self {
+        Self {
+            name: Name("Test Card".to_string()),
+            mana_cost: None,
+            color_indicator: None,
+            type_line: TypeLine {
+                card_type: [].into(),
+                subtype: [].into(),
+                supertype: [].into(),
+            },
+            expansion_symbol: ExpansionSymbol {
+                set: "TEST".into(),
+                rarity: Rarity::Common,
+            },
+            text: "".into(),
+            pt: None,
+            loyalty: None,
+            collector_number: 0,
+        }
+    }
 }
 
 impl Card {
@@ -863,7 +896,6 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use super::*;
-    use crate::game::find_card_by_name;
 
     #[test]
     fn color_order_is_stable() {
@@ -885,31 +917,36 @@ mod tests {
 
     #[test]
     fn lands_are_colorless() {
-        // TODO: Consider introducing a CardBuilder specifically for tests.
-        // https://scryfall.com/card/thb/250/plains
-        let plains = find_card_by_name("Plains");
-        assert!(plains.is_some());
-        assert_eq!(plains.unwrap().color(), None);
+        // Our default empty card has no mana cost or color indicator, thus it behaves like a land.
+        let card = CardBuilder::default().build().unwrap();
+        assert_eq!(card.color(), None);
     }
 
     #[test]
     fn generic_mana_is_colorless() {
-        // TODO: Consider introducing a CardBuilder specifically for tests.
-        // https://scryfall.com/card/thb/237/soul-guide-lantern
-        let soul_guide_lantern = find_card_by_name("Soul-Guide Lantern");
-        assert!(soul_guide_lantern.is_some());
-        assert_eq!(soul_guide_lantern.unwrap().color(), None);
+        // Build a card with {1}.
+        let card = CardBuilder::default()
+            .mana_cost(ManaCost([ManaSymbol::Generic(1)].into()))
+            .build()
+            .unwrap();
+        assert_eq!(card.color(), None);
     }
 
     #[test]
     fn mixed_mana_costs_have_the_correct_color() {
-        // TODO: Consider introducing a CardBuilder specifically for tests.
-        // https://scryfall.com/card/thb/224/polukranos-unchained
-        let polukranos_unchained = find_card_by_name("Polukranos, Unchained");
-        assert!(polukranos_unchained.is_some());
-        assert_eq!(
-            polukranos_unchained.unwrap().color(),
-            Some([Color::Black, Color::Green].into())
-        );
+        // Build a card with {2}{B}{B}{G}.
+        let card = CardBuilder::default()
+            .mana_cost(ManaCost(
+                [
+                    ManaSymbol::Generic(2),
+                    ManaSymbol::Colored(Color::Black),
+                    ManaSymbol::Colored(Color::Black),
+                    ManaSymbol::Colored(Color::Green),
+                ]
+                .into(),
+            ))
+            .build()
+            .unwrap();
+        assert_eq!(card.color(), Some([Color::Black, Color::Green].into()));
     }
 }

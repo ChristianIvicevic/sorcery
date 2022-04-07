@@ -6,6 +6,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+derive_builder = "0.11.1"
 hecs = { version = "0.7.6", features = ["macros"] }
 indexmap = { version = "1.8.1", features = ["serde"] }
 log = "0.4.16"

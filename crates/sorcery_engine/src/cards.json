@@ -45,10 +45,10 @@
   },
   {
     "name": "Soul-Guide Lantern",
-    "mana_cost": [{ "Generic":1 }],
+    "mana_cost": [{ "Generic": 1 }],
     "color_indicator": null,
     "type_line": { "card_type": ["Artifact"], "subtype": [], "supertype": [] },
-    "expansion_symbol": { "set":"THB", "rarity": "Uncommon" },
+    "expansion_symbol": { "set": "THB", "rarity": "Uncommon" },
     "text": "",
     "pt": null,
     "loyalty": null,
