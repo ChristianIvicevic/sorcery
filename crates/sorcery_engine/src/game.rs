@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
-use crate::components::{Object, Owner};
 use hecs::{Entity, EntityBuilder, World};
 use once_cell::sync::Lazy;
 
-use crate::core::{Card, Player, PlayerId, Zone};
+use crate::{
+    components::{Object, Owner},
+    core::{Card, Player, PlayerId, Zone},
+};
 
 /// A statically loaded database of all cards that can be used as templates to spawn new instances.
 static CARD_DATABASE: Lazy<Vec<Card>> = Lazy::new(|| {
@@ -141,9 +143,10 @@ pub(crate) struct Library {
 
 #[cfg(test)]
 mod tests {
+    use hecs::With;
+
     use super::*;
     use crate::core::Zone;
-    use hecs::With;
 
     #[test]
     #[allow(clippy::needless_collect)]
