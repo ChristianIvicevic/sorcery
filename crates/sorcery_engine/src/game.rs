@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
-use hecs::{Entity, World};
+use crate::components::{Object, Owner};
+use hecs::{Entity, EntityBuilder, World};
 use once_cell::sync::Lazy;
 
-use crate::core::{Card, Player, PlayerId};
+use crate::core::{Card, Player, PlayerId, Zone};
 
 /// A statically loaded database of all cards that can be used as templates to spawn new instances.
 static CARD_DATABASE: Lazy<Vec<Card>> = Lazy::new(|| {
@@ -36,12 +37,17 @@ impl Game {
                 life: 20,
                 name: format!("Player {}", it + 1),
             })
-            .collect();
+            .collect::<Vec<_>>();
+
+        let mut libraries = HashMap::new();
+        for player in &players {
+            libraries.insert(player.id, Library::default());
+        }
 
         Self {
             world: World::new(),
             players,
-            libraries: HashMap::new(),
+            libraries,
         }
     }
 
@@ -79,41 +85,105 @@ impl Game {
     pub(crate) fn world_mut(&mut self) -> &mut World {
         &mut self.world
     }
+
+    /// Spawns an instance of a [`Card`] in the specified [`Zone`].
+    pub(crate) fn spawn_object(&mut self, card: &Card, zone: &Zone) {
+        let mut builder = EntityBuilder::new();
+        builder
+            .add(Object)
+            .add(card.name.clone())
+            .add(card.type_line.clone())
+            .add(card.expansion_symbol.clone())
+            .add(card.rules_text.clone())
+            .add(card.collector_number)
+            .add(card.color());
+
+        if let Some(ref mana_cost) = card.mana_cost {
+            builder.add(mana_cost.clone());
+        }
+        if let Some(pt) = card.pt {
+            builder.add(pt);
+        }
+        if let Some(loyalty) = card.loyalty {
+            builder.add(loyalty);
+        }
+
+        match zone {
+            &Zone::Library(owner) => {
+                builder
+                    // 108.3. The owner of a card in the game is the player who started the game
+                    //        with it in their deck. [...]
+                    .add(Owner(owner))
+                    .add(Zone::Library(owner));
+
+                let entity = self.world.spawn(builder.build());
+                self.libraries
+                    .get_mut(&owner)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Could not access the library of player with id {}.",
+                            owner.0
+                        )
+                    })
+                    .cards
+                    .push(entity);
+            }
+            _ => unimplemented!(),
+        }
+    }
 }
 
 /// 401.1. When a game begins, each player’s deck becomes their library.
+#[derive(Default)]
 pub(crate) struct Library {
-    cards: Vec<Entity>,
+    pub(crate) cards: Vec<Entity>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        components::{Object, ObjectBundle, Owner},
-        core::{
-            BasicLandType, CardType, Color, LandType, Name, Subtype, Supertype, TypeLine, Zone,
-        },
-    };
+    use crate::core::Zone;
+    use hecs::With;
 
     #[test]
+    #[allow(clippy::needless_collect)]
     fn sample_game() {
         let mut game = Game::new(2);
 
         let mut players = game.players().iter();
         let first_player = players.next().unwrap().id;
+        let second_player = players.next().unwrap().id;
 
-        let _forest_card_entity = game.world_mut().spawn(ObjectBundle {
-            color: Color::Green,
-            name: Name("Forest".into()),
-            object: Object,
-            type_line: TypeLine {
-                card_type: [CardType::Land].into(),
-                subtype: [Subtype::Land(LandType::Basic(BasicLandType::Forest))].into(),
-                supertype: [Supertype::Basic].into(),
-            },
-            owner: Owner(first_player),
-            zone: Zone::Library(first_player),
-        });
+        let mut white_deck = Vec::new();
+        for _ in 0..20 {
+            white_deck.push(find_card_by_name("Plains").unwrap());
+            white_deck.push(find_card_by_name("Soulmender").unwrap());
+        }
+        for card in white_deck {
+            game.spawn_object(card, &Zone::Library(first_player));
+        }
+
+        let mut green_deck = Vec::new();
+        for _ in 0..20 {
+            green_deck.push(find_card_by_name("Forest").unwrap());
+            green_deck.push(find_card_by_name("Llanowar Elves").unwrap());
+        }
+        for card in green_deck {
+            game.spawn_object(card, &Zone::Library(second_player));
+        }
+
+        let mut objects = game.world_mut().query::<With<Object, &Zone>>();
+
+        let white_library = objects
+            .iter()
+            .filter(|(_, zone)| **zone == Zone::Library(first_player))
+            .collect::<Vec<_>>();
+        assert_eq!(white_library.len(), 40);
+
+        let green_library = objects
+            .iter()
+            .filter(|(_, zone)| **zone == Zone::Library(second_player))
+            .collect::<Vec<_>>();
+        assert_eq!(green_library.len(), 40);
     }
 }

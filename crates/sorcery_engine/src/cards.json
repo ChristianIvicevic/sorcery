@@ -5,7 +5,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Land"], "subtype": [{ "Land": { "Basic": "Plains" } }], "supertype": ["Basic"] },
     "expansion_symbol": { "set": "THB", "rarity": "BasicLand" },
-    "text": "",
+    "rules_text": "",
     "pt": null,
     "loyalty": null,
     "collector_number": 250
@@ -16,7 +16,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Land"], "subtype": [{ "Land": { "Basic": "Forest" } }], "supertype": ["Basic"] },
     "expansion_symbol": { "set":"THB", "rarity": "BasicLand" },
-    "text": "",
+    "rules_text": "",
     "pt": null,
     "loyalty": null,
     "collector_number": 254
@@ -27,7 +27,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Human" }, { "Creature": "Cleric" }], "supertype": [] },
     "expansion_symbol": { "set": "M20", "rarity": "Common" },
-    "text": "",
+    "rules_text": "",
     "pt": { "power": { "Fixed": 1 }, "toughness": { "Fixed": 1 } },
     "loyalty": null,
     "collector_number": 37
@@ -38,7 +38,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Elf" }, { "Creature":"Druid" }], "supertype":[] },
     "expansion_symbol": { "set": "M19", "rarity": "Common" },
-    "text": "",
+    "rules_text": "",
     "pt": { "power": { "Fixed": 1 }, "toughness": { "Fixed": 1 } },
     "loyalty": null,
     "collector_number": 314
@@ -49,7 +49,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Artifact"], "subtype": [], "supertype": [] },
     "expansion_symbol": { "set": "THB", "rarity": "Uncommon" },
-    "text": "",
+    "rules_text": "",
     "pt": null,
     "loyalty": null,
     "collector_number": 237
@@ -60,7 +60,7 @@
     "color_indicator": null,
     "type_line": { "card_type": ["Creature"], "subtype": [{ "Creature": "Zombie" }, { "Creature": "Hydra" }], "supertype": ["Legendary"] },
     "expansion_symbol": { "set": "THB", "rarity": "MythicRare" },
-    "text": "",
+    "rules_text": "",
     "pt": { "power": { "Fixed": 0 }, "toughness": { "Fixed": 0 } },
     "loyalty": null,
     "collector_number": 224

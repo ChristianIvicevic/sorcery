@@ -1,9 +1,14 @@
-use hecs::Bundle;
-
-use crate::core::{Color, Name, PlayerId, TypeLine, Zone};
+use crate::core::PlayerId;
 
 /// 109.1. An object is an ability on the stack, a card, a copy of a card, a token, a spell, a
 ///        permanent, or an emblem.
+///
+/// 109.3. An object’s characteristics are name, mana cost, color, color indicator, card type,
+///        subtype, supertype, rules text, abilities, power, toughness, loyalty, hand modifier, and
+///        life modifier. Objects can have some or all of these characteristics. Any other
+///        information about an object isn’t a characteristic. For example, characteristics don’t
+///        include whether a permanent is tapped, a spell’s target, an object’s owner or controller,
+///        what an Aura enchants, and so on.
 pub(crate) struct Object;
 
 /// 108.3. The owner of a card in the game is the player who started the game with it in their deck.
@@ -18,19 +23,3 @@ pub(crate) struct Owner(pub(crate) PlayerId);
 ///        neither on the stack nor on the battlefield aren’t controlled by any player. See rule
 ///        108.4.
 pub(crate) struct Controller(pub(crate) PlayerId);
-
-/// 109.3. An object’s characteristics are name, mana cost, color, color indicator, card type,
-///        subtype, supertype, rules text, abilities, power, toughness, loyalty, hand modifier, and
-///        life modifier. Objects can have some or all of these characteristics. Any other
-///        information about an object isn’t a characteristic. For example, characteristics don’t
-///        include whether a permanent is tapped, a spell’s target, an object’s owner or controller,
-///        what an Aura enchants, and so on.
-#[derive(Bundle)]
-pub(crate) struct ObjectBundle {
-    pub(crate) object: Object,
-    pub(crate) name: Name,
-    pub(crate) color: Color,
-    pub(crate) owner: Owner,
-    pub(crate) type_line: TypeLine,
-    pub(crate) zone: Zone,
-}
