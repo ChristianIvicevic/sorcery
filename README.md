@@ -1,8 +1,9 @@
 # Sorcery
 
-Sorcery is an incomplete implementation of a card game using various technologies.
-The engine enforcing the rules and simulating the game as well as the game server itself are written using Rust.
-A client for the game is written using Typescript and Next.js.
+Sorcery is an implementation of a card game.
+It includes an engine enforcing the rules and simulating the game written in Rust.
+Furthermore there is a game server that is also written in Rust and depending on the engine.
+Finally, a client for the game is written using web technologies including Typescript and Next.js in combination with Tauri.
 
 ## Rules
 
