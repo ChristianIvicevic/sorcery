@@ -2,22 +2,23 @@ use std::collections::HashMap;
 
 use hecs::{Entity, EntityBuilder, World};
 use once_cell::sync::Lazy;
+use rand::prelude::SliceRandom;
 
 use crate::{
     components::{Object, Owner},
-    core::{Card, Player, PlayerId, Zone},
+    core::{Card, Deck, Player, PlayerId, Zone},
 };
 
 /// A statically loaded database of all cards that can be used as templates to spawn new instances.
 static CARD_DATABASE: Lazy<Vec<Card>> = Lazy::new(|| {
     let database = include_str!("./cards.json");
-    serde_json::from_str(database).unwrap()
+    serde_json::from_str(database).expect("Could not initialize the card database.")
 });
 
 /// Returns a reference to the first card with the specified name. In case multiple cards share the
 /// same name, i.e. lands or reprints in different sets, there is no guarantee the same card will be
 /// selected on subsequent calls.
-pub(crate) fn find_card_by_name(name: &str) -> Option<&'static Card> {
+pub(crate) fn find_card_by_name(name: &str) -> Option<&'_ Card> {
     CARD_DATABASE.iter().find(|it| it.name.0 == name)
 }
 
@@ -41,10 +42,10 @@ impl Game {
             })
             .collect::<Vec<_>>();
 
-        let mut libraries = HashMap::new();
-        for player in &players {
-            libraries.insert(player.id, Library::default());
-        }
+        let libraries = players
+            .iter()
+            .map(|it| (it.id, Library::default()))
+            .collect();
 
         Self {
             world: World::new(),
@@ -71,8 +72,19 @@ impl Game {
     /// 103.2. After the starting player has been determined, each player shuffles their deck so
     ///        that the cards are in a random order. Each player may then shuffle or cut their
     ///        opponents’ decks. The players’ decks become their libraries.
-    pub fn start() {
-        // TODO: Implement rule 103.1. For now we just start with player 1.
+    pub fn start(&mut self, decks: &HashMap<PlayerId, Deck>) {
+        assert_eq!(decks.len(), self.players.len());
+        // TODO: Implement rule 103.1. For now we just implicitly start with player 1.
+
+        for (&id, deck) in decks.iter() {
+            for card in deck.iter() {
+                self.spawn_object(card, &Zone::Library(id));
+            }
+        }
+
+        for library in self.libraries.values_mut() {
+            library.shuffle();
+        }
     }
 
     /// Returns a slice of players within the current game.
@@ -137,8 +149,15 @@ impl Game {
 
 /// 401.1. When a game begins, each player’s deck becomes their library.
 #[derive(Default)]
-pub(crate) struct Library {
-    pub(crate) cards: Vec<Entity>,
+struct Library {
+    cards: Vec<Entity>,
+}
+
+impl Library {
+    /// Shuffles the library using a thread-local random number generator.
+    fn shuffle(&mut self) {
+        self.cards.shuffle(&mut rand::thread_rng());
+    }
 }
 
 #[cfg(test)]
@@ -146,34 +165,20 @@ mod tests {
     use hecs::With;
 
     use super::*;
-    use crate::core::Zone;
 
     #[test]
     #[allow(clippy::needless_collect)]
     fn sample_game() {
         let mut game = Game::new(2);
 
+        let white_deck = Deck::from(&[("Plains", 30), ("Soulmender", 30)]);
+        let green_deck = Deck::from(&[("Forest", 30), ("Llanowar Elves", 30)]);
+
         let mut players = game.players().iter();
-        let first_player = players.next().unwrap().id;
-        let second_player = players.next().unwrap().id;
+        let first_player = players.next().expect("Could not get the first player.").id;
+        let second_player = players.next().expect("Could not get the second player.").id;
 
-        let mut white_deck = Vec::new();
-        for _ in 0..20 {
-            white_deck.push(find_card_by_name("Plains").unwrap());
-            white_deck.push(find_card_by_name("Soulmender").unwrap());
-        }
-        for card in white_deck {
-            game.spawn_object(card, &Zone::Library(first_player));
-        }
-
-        let mut green_deck = Vec::new();
-        for _ in 0..20 {
-            green_deck.push(find_card_by_name("Forest").unwrap());
-            green_deck.push(find_card_by_name("Llanowar Elves").unwrap());
-        }
-        for card in green_deck {
-            game.spawn_object(card, &Zone::Library(second_player));
-        }
+        game.start(&[(first_player, white_deck), (second_player, green_deck)].into());
 
         let mut objects = game.world_mut().query::<With<Object, &Zone>>();
 
@@ -181,12 +186,12 @@ mod tests {
             .iter()
             .filter(|(_, zone)| **zone == Zone::Library(first_player))
             .collect::<Vec<_>>();
-        assert_eq!(white_library.len(), 40);
+        assert_eq!(white_library.len(), 60);
 
         let green_library = objects
             .iter()
             .filter(|(_, zone)| **zone == Zone::Library(second_player))
             .collect::<Vec<_>>();
-        assert_eq!(green_library.len(), 40);
+        assert_eq!(green_library.len(), 60);
     }
 }

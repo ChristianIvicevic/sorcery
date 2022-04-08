@@ -5,14 +5,16 @@ use derive_builder::Builder;
 use indexmap::IndexSet;
 use serde::{Deserialize, Serialize};
 
+use crate::game::find_card_by_name;
+
 /// Opaque type to reference a player within a game.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct PlayerId(pub(crate) u32);
+pub struct PlayerId(pub(crate) u32);
 
 /// 201.2. A card’s name is always considered to be the English version of its name, regardless of
 ///        printed language.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct Name(pub(crate) String);
+pub struct Name(pub(crate) String);
 
 /// 102.1. A player is one of the people in the game. The active player is the player whose turn it
 ///        is. The other players are nonactive players.
@@ -24,7 +26,7 @@ pub(crate) struct Player {
 
 /// 105.1. There are five colors in the Magic game: white, blue, black, red, and green.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
-pub(crate) enum Color {
+pub enum Color {
     White,
     Blue,
     Black,
@@ -37,7 +39,7 @@ pub(crate) enum Color {
 ///        its frame. An object’s color or colors may also be defined by a color indicator or a
 ///        characteristic-defining ability. See rule 202.2.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum ColorKind {
+pub enum ColorKind {
     /// 105.2a A monocolored object is exactly one of the five colors.
     Monocolored(Color),
     /// 105.2b A multicolored object is two or more of the five colors.
@@ -138,18 +140,18 @@ pub(crate) enum ManaSymbol {
 ///        from the Future Sight set have alternate frames in which the mana symbols appear to the
 ///        left of the illustration.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
+pub struct ManaCost(pub(crate) IndexSet<ManaSymbol>);
 
 /// 207.1. The text box is printed on the lower half of the card. It usually contains rules text
 ///        defining the card’s abilities.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct RulesText(pub(crate) String);
+pub struct RulesText(pub(crate) String);
 
 /// 209.1. Each planeswalker card has a loyalty number printed in its lower right corner. This
 ///        indicates its loyalty while it’s not on the battlefield, and it also indicates that the
 ///        planeswalker enters the battlefield with that many loyalty counters on it.
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub(crate) struct Loyalty(pub(crate) u64);
+pub struct Loyalty(pub(crate) u64);
 
 /// 212.1. Each card features text printed below the text box that has no effect on game play. Not
 ///        all card sets were printed with all of the information listed below on each card.
@@ -159,7 +161,47 @@ pub(crate) struct Loyalty(pub(crate) u64);
 ///        unique cards in Planeswalker Decks, have card numbers that exceed the listed total number
 ///        of cards.
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub(crate) struct CollectorNumber(pub(crate) u64);
+pub struct CollectorNumber(pub(crate) u64);
+
+/// 100.2. To play, each player needs their own deck of traditional Magic cards, small items to
+///        represent any tokens and counters, and some way to clearly track life totals.
+///
+/// 100.2a In constructed play (a way of playing in which each player creates their own deck ahead
+///        of time), each deck has a minimum deck size of 60 cards. A constructed deck may contain
+///        any number of basic land cards and no more than four of any card with a particular
+///        English name other than basic land cards.
+///
+/// 100.2b In limited play (a way of playing in which each player gets the same quantity of unopened
+///        Magic product such as booster packs and creates their own deck using only this product
+///        and basic land cards), each deck has a minimum deck size of 40 cards. A limited deck may
+///        contain as many duplicates of a card as are included with the product.
+///
+/// 100.2c Commander decks are subject to additional deckbuilding restrictions and requirements. See
+///        rule 903, “Commander,” for details.
+pub struct Deck<'a>(Vec<&'a Card>);
+
+impl<'a> Deck<'a> {
+    /// Creates a new deck using the specified decklist.
+    pub(crate) fn from(decklist: &[(&'a str, u64)]) -> Self {
+        Self(
+            decklist
+                .iter()
+                .flat_map(|&(name, amount)| {
+                    (0..amount).map(move |_| {
+                        find_card_by_name(name).unwrap_or_else(|| {
+                            panic!("Cannot find card with name {} in database.", name)
+                        })
+                    })
+                })
+                .collect(),
+        )
+    }
+
+    /// Returns an iterator over all cards in the deck.
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &&Card> {
+        self.0.iter()
+    }
+}
 
 /// 200.1. The parts of a card are name, mana cost, illustration, color indicator, type line,
 ///        expansion symbol, text box, power and toughness, loyalty, hand modifier, life modifier,
@@ -174,7 +216,7 @@ pub(crate) struct CollectorNumber(pub(crate) u64);
     derive(Builder),
     builder(pattern = "owned", setter(strip_option), default)
 )]
-pub(crate) struct Card {
+pub struct Card {
     /// 201.1. The name of a card is printed on its upper left corner.
     pub(crate) name: Name,
     /// 202.1. A card’s mana cost is indicated by mana symbols near the top of the card. (See rule
@@ -220,6 +262,7 @@ pub(crate) struct Card {
 impl Default for Card {
     /// Default implementation that yields an empty card used for testing in combination with the
     /// [`CardBuilder`].
+    #[cfg(test)]
     fn default() -> Self {
         Self {
             name: Name("Test Card".to_string()),
@@ -274,7 +317,12 @@ impl Card {
         match colors {
             None => ColorKind::Colorless,
             Some(colors) => match colors.len() {
-                1 => ColorKind::Monocolored(*colors.iter().next().unwrap()),
+                1 => ColorKind::Monocolored(
+                    *colors
+                        .iter()
+                        .next()
+                        .expect("Could not retrieve the color for the card."),
+                ),
                 _ => ColorKind::Multicolored(colors),
             },
         }
@@ -284,7 +332,7 @@ impl Card {
 /// 205.1. The type line is printed directly below the illustration. It contains the card’s card
 ///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct TypeLine {
+pub struct TypeLine {
     /// 205.2a The card types are artifact, conspiracy, creature, dungeon, enchantment, instant,
     ///        land, phenomenon, plane, planeswalker, scheme, sorcery, tribal, and vanguard. See
     ///        section 3, “Card Types.”
@@ -299,7 +347,7 @@ pub(crate) struct TypeLine {
 /// 206.1. The expansion symbol indicates which Magic set a card is from. It’s a small icon normally
 ///        printed below the right edge of the illustration. It has no effect on game play.
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct ExpansionSymbol {
+pub struct ExpansionSymbol {
     // TODO: Figure out whether to use a String or enum for this.
     pub(crate) set: String,
     pub(crate) rarity: Rarity,
@@ -884,7 +932,7 @@ pub(crate) enum Supertype {
 ///        object has power 2 and toughness 3. Power and toughness can be modified or set to
 ///        particular values by effects.
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub(crate) struct PtCharacteristic {
+pub struct PtCharacteristic {
     pub(crate) power: PtValue,
     pub(crate) toughness: PtValue,
 }
@@ -956,7 +1004,7 @@ mod tests {
     #[test]
     fn lands_are_colorless() {
         // Our default empty card has no mana cost or color indicator, thus it behaves like a land.
-        let card = Card::builder().build().unwrap();
+        let card = Card::builder().build().expect("Failed to build the card.");
         assert_eq!(card.color(), ColorKind::Colorless);
     }
 
@@ -966,7 +1014,7 @@ mod tests {
         let card = Card::builder()
             .mana_cost(ManaCost([ManaSymbol::Generic(1)].into()))
             .build()
-            .unwrap();
+            .expect("Failed to build the card.");
         assert_eq!(card.color(), ColorKind::Colorless);
     }
 
@@ -984,7 +1032,7 @@ mod tests {
                 .into(),
             ))
             .build()
-            .unwrap();
+            .expect("Failed to build the card.");
         assert_eq!(
             card.color(),
             ColorKind::Multicolored([Color::Black, Color::Green].into())
