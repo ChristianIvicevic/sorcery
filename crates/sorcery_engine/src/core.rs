@@ -38,8 +38,12 @@ pub enum Color {
 ///        is the color or colors of the mana symbols in its mana cost, regardless of the color of
 ///        its frame. An object’s color or colors may also be defined by a color indicator or a
 ///        characteristic-defining ability. See rule 202.2.
+///
+/// # Remarks
+/// The name color identity is usually referring to rule 903.4, but we use it for the color or
+/// colors of an object and its color identity.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ColorKind {
+pub enum ColorIdentity {
     /// 105.2a A monocolored object is exactly one of the five colors.
     Monocolored(Color),
     /// 105.2b A multicolored object is two or more of the five colors.
@@ -197,9 +201,9 @@ impl<'a> Deck<'a> {
         )
     }
 
-    /// Returns an iterator over all cards in the deck.
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &&Card> {
-        self.0.iter()
+    /// Returns a slice of all cards in the deck.
+    pub(crate) fn cards(&self) -> &[&'a Card] {
+        &self.0
     }
 }
 
@@ -227,7 +231,7 @@ pub struct Card {
     /// 204.1. The color indicator is printed to the left of the type line directly below the
     ///        illustration. It consists of a circular symbol filled in with one or more colors. A
     ///        color indicator is usually found on nonland cards without a mana cost.
-    pub(crate) color_indicator: Option<ColorKind>,
+    pub(crate) color_indicator: Option<ColorIdentity>,
     /// 205.1. The type line is printed directly below the illustration. It contains the card’s card
     ///        type(s). It also contains the card’s subtype(s) and supertype(s), if applicable.
     pub(crate) type_line: TypeLine,
@@ -265,7 +269,7 @@ impl Default for Card {
     #[cfg(test)]
     fn default() -> Self {
         Self {
-            name: Name("Test Card".to_string()),
+            name: Name("Test Card".into()),
             mana_cost: None,
             color_indicator: None,
             type_line: TypeLine {
@@ -294,7 +298,7 @@ impl Card {
 
     /// 202.2. An object is the color or colors of the mana symbols in its mana cost, regardless of
     ///        the color of its frame.
-    pub(crate) fn color(&self) -> ColorKind {
+    pub(crate) fn color(&self) -> ColorIdentity {
         if let Some(ref color_indicator) = self.color_indicator {
             return color_indicator.clone();
         }
@@ -315,15 +319,15 @@ impl Card {
             .filter(|it| !it.is_empty());
 
         match colors {
-            None => ColorKind::Colorless,
+            None => ColorIdentity::Colorless,
             Some(colors) => match colors.len() {
-                1 => ColorKind::Monocolored(
+                1 => ColorIdentity::Monocolored(
                     *colors
                         .iter()
                         .next()
                         .expect("Could not retrieve the color for the card."),
                 ),
-                _ => ColorKind::Multicolored(colors),
+                _ => ColorIdentity::Multicolored(colors),
             },
         }
     }
@@ -1005,7 +1009,7 @@ mod tests {
     fn lands_are_colorless() {
         // Our default empty card has no mana cost or color indicator, thus it behaves like a land.
         let card = Card::builder().build().expect("Failed to build the card.");
-        assert_eq!(card.color(), ColorKind::Colorless);
+        assert_eq!(card.color(), ColorIdentity::Colorless);
     }
 
     #[test]
@@ -1015,7 +1019,7 @@ mod tests {
             .mana_cost(ManaCost([ManaSymbol::Generic(1)].into()))
             .build()
             .expect("Failed to build the card.");
-        assert_eq!(card.color(), ColorKind::Colorless);
+        assert_eq!(card.color(), ColorIdentity::Colorless);
     }
 
     #[test]
@@ -1035,7 +1039,7 @@ mod tests {
             .expect("Failed to build the card.");
         assert_eq!(
             card.color(),
-            ColorKind::Multicolored([Color::Black, Color::Green].into())
+            ColorIdentity::Multicolored([Color::Black, Color::Green].into())
         );
     }
 }

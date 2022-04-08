@@ -77,7 +77,7 @@ impl Game {
         // TODO: Implement rule 103.1. For now we just implicitly start with player 1.
 
         for (&id, deck) in decks.iter() {
-            for card in deck.iter() {
+            for card in deck.cards() {
                 self.spawn_object(card, &Zone::Library(id));
             }
         }
