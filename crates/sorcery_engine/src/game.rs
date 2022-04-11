@@ -72,6 +72,21 @@ impl Game {
     /// 103.2. After the starting player has been determined, each player shuffles their deck so
     ///        that the cards are in a random order. Each player may then shuffle or cut their
     ///        opponents’ decks. The players’ decks become their libraries.
+    ///
+    /// 103.4. Each player draws a number of cards equal to their starting hand size, which is
+    ///        normally seven. (Some effects can modify a player’s starting hand size.) A player who
+    ///        is dissatisfied with their initial hand may take a mulligan. First, the starting
+    ///        player declares whether they will take a mulligan. Then each other player in turn
+    ///        order does the same. Once each player has made a declaration, all players who decided
+    ///        to take mulligans do so at the same time. To take a mulligan, a player shuffles the
+    ///        cards in their hand back into their library, draws a new hand of cards equal to their
+    ///        starting hand size, then puts a number of those cards equal to the number of times
+    ///        that player has taken a mulligan on the bottom of their library in any order. Once a
+    ///        player chooses not to take a mulligan, the remaining cards become that player’s
+    ///        opening hand, and that player may not take any further mulligans. This process is
+    ///        then repeated until no player takes a mulligan. A player can take mulligans until
+    ///        their opening hand would be zero cards, after which they may not take further
+    ///        mulligans.
     pub fn start(&mut self, decks: &HashMap<PlayerId, Deck>) {
         assert_eq!(decks.len(), self.players.len());
         // TODO: Implement rule 103.1. For now we just implicitly start with player 1.

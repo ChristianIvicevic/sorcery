@@ -202,7 +202,7 @@ impl<'a> Deck<'a> {
     }
 
     /// Returns a slice of all cards in the deck.
-    pub(crate) fn cards(&self) -> &[&'a Card] {
+    pub(crate) fn cards(&self) -> &[&Card] {
         &self.0
     }
 }
@@ -1040,6 +1040,22 @@ mod tests {
         assert_eq!(
             card.color(),
             ColorIdentity::Multicolored([Color::Black, Color::Green].into())
+        );
+    }
+
+    #[test]
+    fn color_identity_for_transform_is_based_on_color_indicator() {
+        // Build a card that represents the backside without mana cost of a double-faced card such
+        // as https://scryfall.com/card/m19/218/nicol-bolas-the-ravager-nicol-bolas-the-arisen
+        let card = Card::builder()
+            .color_indicator(ColorIdentity::Multicolored(
+                [Color::Blue, Color::Black, Color::Red].into(),
+            ))
+            .build()
+            .expect("Failed to build the card.");
+        assert_eq!(
+            card.color(),
+            ColorIdentity::Multicolored([Color::Blue, Color::Black, Color::Red].into(),)
         );
     }
 }
